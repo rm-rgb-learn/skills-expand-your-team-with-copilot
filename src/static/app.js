@@ -101,8 +101,8 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const activityCard = activitiesList.querySelector(
-      `[data-activity-name="${CSS.escape(sharedActivityName)}"]`
+    const activityCard = Array.from(activitiesList.children).find(
+      (card) => card.dataset.activityName === sharedActivityName
     );
 
     if (!activityCard) {
@@ -628,17 +628,7 @@ document.addEventListener("DOMContentLoaded", () => {
             .join("")}
         </ul>
       </div>
-      <div class="share-actions" aria-label="Share this activity">
-        <button class="share-button" data-activity="${name}" type="button">
-          Share
-        </button>
-        <button class="share-button secondary-share-button" data-copy-activity="${name}" type="button">
-          Copy Link
-        </button>
-        <a class="share-button secondary-share-button" href="${emailShareUrl}">
-          Email
-        </a>
-      </div>
+      <div class="share-actions" role="group" aria-label="Share this activity"></div>
       <div class="activity-card-actions">
         ${
           currentUser
@@ -658,17 +648,29 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
     `;
 
-    const shareButton = activityCard.querySelector(".share-button[data-activity]");
+    const shareActions = activityCard.querySelector(".share-actions");
+    const shareButton = document.createElement("button");
+    shareButton.className = "share-button";
+    shareButton.type = "button";
+    shareButton.textContent = "Share";
     shareButton.addEventListener("click", () => {
       shareActivity(name, details);
     });
 
-    const copyLinkButton = activityCard.querySelector(
-      ".share-button[data-copy-activity]"
-    );
+    const copyLinkButton = document.createElement("button");
+    copyLinkButton.className = "share-button secondary-share-button";
+    copyLinkButton.type = "button";
+    copyLinkButton.textContent = "Copy Link";
     copyLinkButton.addEventListener("click", () => {
       copyActivityLink(name);
     });
+
+    const emailShareLink = document.createElement("a");
+    emailShareLink.className = "share-button secondary-share-button";
+    emailShareLink.href = emailShareUrl;
+    emailShareLink.textContent = "Email";
+
+    shareActions.append(shareButton, copyLinkButton, emailShareLink);
 
     // Add click handlers for delete buttons
     const deleteButtons = activityCard.querySelectorAll(".delete-participant");
