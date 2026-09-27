@@ -46,6 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Authentication state
   let currentUser = null;
   let currentTheme = "light";
+  let hasSavedThemePreference = false;
 
   // Time range mappings for the dropdown
   const timeRanges = {
@@ -54,6 +55,8 @@ document.addEventListener("DOMContentLoaded", () => {
     weekend: { days: ["Saturday", "Sunday"] }, // Weekend days
   };
   const supportedThemes = new Set(["light", "dark"]);
+  const prefersDarkModeQuery =
+    window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
 
   function getStoredTheme() {
     try {
@@ -73,16 +76,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function updateThemeToggle() {
+  function applyTheme() {
     const isDarkMode = currentTheme === "dark";
-    const themeActionLabel = isDarkMode
-      ? "Switch to light mode"
-      : "Switch to dark mode";
     if (isDarkMode) {
       document.documentElement.setAttribute("data-theme", "dark");
     } else {
       document.documentElement.removeAttribute("data-theme");
     }
+  }
+
+  function updateThemeToggle() {
+    const isDarkMode = currentTheme === "dark";
+    const themeActionLabel = isDarkMode
+      ? "Switch to light mode"
+      : "Switch to dark mode";
     themeToggle.setAttribute("aria-pressed", String(isDarkMode));
     themeToggle.setAttribute("aria-label", themeActionLabel);
     themeToggle.title = themeActionLabel;
@@ -94,17 +101,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function initializeTheme() {
     const savedTheme = getStoredTheme();
-    const prefersDarkMode =
-      window.matchMedia &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const prefersDarkMode = prefersDarkModeQuery && prefersDarkModeQuery.matches;
 
+    hasSavedThemePreference = Boolean(savedTheme);
     currentTheme = savedTheme || (prefersDarkMode ? "dark" : "light");
+    applyTheme();
     updateThemeToggle();
   }
 
   function toggleTheme() {
     currentTheme = currentTheme === "dark" ? "light" : "dark";
+    hasSavedThemePreference = true;
     saveTheme(currentTheme);
+    applyTheme();
     updateThemeToggle();
   }
 
@@ -296,6 +305,15 @@ document.addEventListener("DOMContentLoaded", () => {
   logoutButton.addEventListener("click", logout);
   closeLoginModal.addEventListener("click", closeLoginModalHandler);
   themeToggle.addEventListener("click", toggleTheme);
+  if (prefersDarkModeQuery) {
+    prefersDarkModeQuery.addEventListener("change", (event) => {
+      if (!hasSavedThemePreference) {
+        currentTheme = event.matches ? "dark" : "light";
+        applyTheme();
+        updateThemeToggle();
+      }
+    });
+  }
 
   // Close login modal when clicking outside
   window.addEventListener("click", (event) => {
