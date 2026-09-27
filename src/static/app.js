@@ -44,6 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let searchQuery = "";
   let currentDay = "";
   let currentTimeRange = "";
+  let sharedActivityId = "";
 
   // Authentication state
   let currentUser = null;
@@ -125,8 +126,91 @@ document.addEventListener("DOMContentLoaded", () => {
     updateThemeToggle();
   }
 
+  function getActivityId(activityName) {
+    return encodeURIComponent(activityName);
+  }
+
+  function getActivityShareUrl(activityName) {
+    const shareUrl = new URL(window.location.pathname, window.location.origin);
+    shareUrl.searchParams.set("activityId", activityName);
+    return shareUrl.toString();
+  }
+
+  function getActivityShareText(activityName, details) {
+    const description = details.description?.trim();
+    return description
+      ? `Check out ${activityName} at Mergington High School. ${description}`
+      : `Check out ${activityName} at Mergington High School.`;
+  }
+
+  async function copyActivityLink(activityName) {
+    const shareUrl = getActivityShareUrl(activityName);
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      showMessage(`Share link copied for ${activityName}.`, "success");
+    } catch (error) {
+      showMessage("Unable to copy the share link right now.", "error");
+      console.error("Error copying activity link:", error);
+    }
+  }
+
+  async function shareActivity(activityName, details) {
+    const shareData = {
+      title: `${activityName} | Mergington High School`,
+      text: getActivityShareText(activityName, details),
+      url: getActivityShareUrl(activityName),
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (error) {
+        if (error.name === "AbortError") {
+          return;
+        }
+        console.error("Error using native share:", error);
+      }
+    }
+
+    await copyActivityLink(activityName);
+  }
+
+  function highlightSharedActivity() {
+    if (!sharedActivityId) {
+      return;
+    }
+
+    const currentHighlightedCard = activitiesList.querySelector(
+      ".shared-activity-highlight"
+    );
+    if (currentHighlightedCard) {
+      currentHighlightedCard.classList.remove("shared-activity-highlight");
+    }
+
+    const activityCard = Array.from(activitiesList.children).find(
+      (card) => card.dataset.activityId === sharedActivityId
+    );
+
+    if (!activityCard) {
+      return;
+    }
+
+    activityCard.classList.add("shared-activity-highlight");
+    activityCard.scrollIntoView({ behavior: "smooth", block: "center" });
+    showMessage(
+      `Showing shared activity: ${activityCard.dataset.activityName}`,
+      "info"
+    );
+  }
+
   // Initialize filters from active elements
   function initializeFilters() {
+    const currentUrl = new URL(window.location.href);
+    const sharedActivity = currentUrl.searchParams.get("activityId") || "";
+    sharedActivityId = sharedActivity ? getActivityId(sharedActivity) : "";
+
     // Initialize day filter
     const activeDayFilter = document.querySelector(".day-filter.active");
     if (activeDayFilter) {
@@ -591,12 +675,16 @@ document.addEventListener("DOMContentLoaded", () => {
     Object.entries(filteredActivities).forEach(([name, details]) => {
       renderActivityCard(name, details);
     });
+
+    highlightSharedActivity();
   }
 
   // Function to render a single activity card
   function renderActivityCard(name, details) {
     const activityCard = document.createElement("div");
     activityCard.className = "activity-card";
+    activityCard.dataset.activityName = name;
+    activityCard.dataset.activityId = getActivityId(name);
 
     // Calculate spots and capacity
     const totalSpots = details.max_participants;
@@ -640,6 +728,12 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
     `;
 
+    const shareUrl = getActivityShareUrl(name);
+    const shareText = getActivityShareText(name, details);
+    const emailShareUrl = `mailto:?subject=${encodeURIComponent(
+      `${name} at Mergington High School`
+    )}&body=${encodeURIComponent(`${shareText}\n\n${shareUrl}`)}`;
+
     activityCard.innerHTML = `
       ${tagHtml}
       <h4>${name}</h4>
@@ -673,6 +767,7 @@ document.addEventListener("DOMContentLoaded", () => {
             .join("")}
         </ul>
       </div>
+      <div class="share-actions" role="group"></div>
       <div class="activity-card-actions">
         ${
           currentUser
@@ -691,6 +786,31 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       </div>
     `;
+
+    const shareActions = activityCard.querySelector(".share-actions");
+    shareActions.setAttribute("aria-label", `Share ${name}`);
+    const shareButton = document.createElement("button");
+    shareButton.className = "share-button";
+    shareButton.type = "button";
+    shareButton.textContent = "Share";
+    shareButton.addEventListener("click", () => {
+      shareActivity(name, details);
+    });
+
+    const copyLinkButton = document.createElement("button");
+    copyLinkButton.className = "share-button secondary-share-button";
+    copyLinkButton.type = "button";
+    copyLinkButton.textContent = "Copy Link";
+    copyLinkButton.addEventListener("click", () => {
+      copyActivityLink(name);
+    });
+
+    const emailShareLink = document.createElement("a");
+    emailShareLink.className = "share-button secondary-share-button";
+    emailShareLink.href = emailShareUrl;
+    emailShareLink.textContent = "Email";
+
+    shareActions.append(shareButton, copyLinkButton, emailShareLink);
 
     // Add click handlers for delete buttons
     const deleteButtons = activityCard.querySelectorAll(".delete-participant");
