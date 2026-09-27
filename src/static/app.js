@@ -78,7 +78,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const themeActionLabel = isDarkMode
       ? "Switch to light mode"
       : "Switch to dark mode";
-    document.documentElement.setAttribute("data-theme", currentTheme);
+    if (isDarkMode) {
+      document.documentElement.setAttribute("data-theme", "dark");
+    } else {
+      document.documentElement.removeAttribute("data-theme");
+    }
     themeToggle.setAttribute("aria-pressed", String(isDarkMode));
     themeToggle.setAttribute("aria-label", themeActionLabel);
     themeToggle.title = themeActionLabel;
