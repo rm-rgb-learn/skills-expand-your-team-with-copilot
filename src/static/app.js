@@ -57,7 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function getActivityShareUrl(activityName) {
-    const shareUrl = new URL(window.location.href);
+    const shareUrl = new URL(window.location.pathname, window.location.origin);
     shareUrl.searchParams.set("activityId", activityName);
     return shareUrl.toString();
   }
@@ -129,7 +129,6 @@ document.addEventListener("DOMContentLoaded", () => {
       `Showing shared activity: ${activityCard.dataset.activityName}`,
       "info"
     );
-    sharedActivityId = "";
   }
 
   // Initialize filters from active elements
