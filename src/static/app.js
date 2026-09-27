@@ -57,7 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function getActivityShareUrl(activityName) {
-    const shareUrl = new URL(window.location.pathname, window.location.origin);
+    const shareUrl = new URL(window.location.href);
     shareUrl.searchParams.set("activityId", getActivityId(activityName));
     return shareUrl.toString();
   }

@@ -217,6 +217,11 @@ section h3 {
   transform: translateY(-1px);
 }
 
+.share-button:focus-visible {
+  outline: 3px solid var(--secondary);
+  outline-offset: 2px;
+}
+
 .secondary-share-button {
   background-color: var(--background);
   color: var(--text-primary);
