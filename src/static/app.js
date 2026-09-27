@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let searchQuery = "";
   let currentDay = "";
   let currentTimeRange = "";
-  let sharedActivityName = "";
+  let sharedActivityId = "";
 
   // Authentication state
   let currentUser = null;
@@ -52,9 +52,13 @@ document.addEventListener("DOMContentLoaded", () => {
     weekend: { days: ["Saturday", "Sunday"] }, // Weekend days
   };
 
+  function getActivityId(activityName) {
+    return encodeURIComponent(activityName);
+  }
+
   function getActivityShareUrl(activityName) {
-    const shareUrl = new URL(window.location.href);
-    shareUrl.searchParams.set("activity", activityName);
+    const shareUrl = new URL(window.location.pathname, window.location.origin);
+    shareUrl.searchParams.set("activityId", getActivityId(activityName));
     return shareUrl.toString();
   }
 
@@ -97,12 +101,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function highlightSharedActivity() {
-    if (!sharedActivityName) {
+    if (!sharedActivityId) {
       return;
     }
 
     const activityCard = Array.from(activitiesList.children).find(
-      (card) => card.dataset.activityName === sharedActivityName
+      (card) => card.dataset.activityId === sharedActivityId
     );
 
     if (!activityCard) {
@@ -111,14 +115,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     activityCard.classList.add("shared-activity-highlight");
     activityCard.scrollIntoView({ behavior: "smooth", block: "center" });
-    showMessage(`Showing shared activity: ${sharedActivityName}`, "info");
-    sharedActivityName = "";
+    showMessage(
+      `Showing shared activity: ${activityCard.dataset.activityName}`,
+      "info"
+    );
+    sharedActivityId = "";
   }
 
   // Initialize filters from active elements
   function initializeFilters() {
     const currentUrl = new URL(window.location.href);
-    sharedActivityName = currentUrl.searchParams.get("activity") || "";
+    sharedActivityId = currentUrl.searchParams.get("activityId") || "";
 
     // Initialize day filter
     const activeDayFilter = document.querySelector(".day-filter.active");
@@ -546,6 +553,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const activityCard = document.createElement("div");
     activityCard.className = "activity-card";
     activityCard.dataset.activityName = name;
+    activityCard.dataset.activityId = getActivityId(name);
 
     // Calculate spots and capacity
     const totalSpots = details.max_participants;
@@ -628,7 +636,7 @@ document.addEventListener("DOMContentLoaded", () => {
             .join("")}
         </ul>
       </div>
-      <div class="share-actions" role="group" aria-label="Share this activity"></div>
+      <div class="share-actions" role="group"></div>
       <div class="activity-card-actions">
         ${
           currentUser
@@ -649,6 +657,7 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
 
     const shareActions = activityCard.querySelector(".share-actions");
+    shareActions.setAttribute("aria-label", `Share ${name}`);
     const shareButton = document.createElement("button");
     shareButton.className = "share-button";
     shareButton.type = "button";
