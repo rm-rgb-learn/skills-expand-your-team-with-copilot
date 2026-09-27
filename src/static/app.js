@@ -40,6 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let searchQuery = "";
   let currentDay = "";
   let currentTimeRange = "";
+  let sharedActivityName = "";
 
   // Authentication state
   let currentUser = null;
@@ -51,8 +52,74 @@ document.addEventListener("DOMContentLoaded", () => {
     weekend: { days: ["Saturday", "Sunday"] }, // Weekend days
   };
 
+  function getActivityShareUrl(activityName) {
+    const shareUrl = new URL(window.location.href);
+    shareUrl.searchParams.set("activity", activityName);
+    return shareUrl.toString();
+  }
+
+  function getActivityShareText(activityName, details) {
+    return `Check out ${activityName} at Mergington High School. ${details.description}`;
+  }
+
+  async function copyActivityLink(activityName) {
+    const shareUrl = getActivityShareUrl(activityName);
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      showMessage(`Share link copied for ${activityName}.`, "success");
+    } catch (error) {
+      showMessage("Unable to copy the share link right now.", "error");
+      console.error("Error copying activity link:", error);
+    }
+  }
+
+  async function shareActivity(activityName, details) {
+    const shareData = {
+      title: `${activityName} | Mergington High School`,
+      text: getActivityShareText(activityName, details),
+      url: getActivityShareUrl(activityName),
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (error) {
+        if (error.name === "AbortError") {
+          return;
+        }
+        console.error("Error using native share:", error);
+      }
+    }
+
+    await copyActivityLink(activityName);
+  }
+
+  function highlightSharedActivity() {
+    if (!sharedActivityName) {
+      return;
+    }
+
+    const activityCard = activitiesList.querySelector(
+      `[data-activity-name="${CSS.escape(sharedActivityName)}"]`
+    );
+
+    if (!activityCard) {
+      return;
+    }
+
+    activityCard.classList.add("shared-activity-highlight");
+    activityCard.scrollIntoView({ behavior: "smooth", block: "center" });
+    showMessage(`Showing shared activity: ${sharedActivityName}`, "info");
+    sharedActivityName = "";
+  }
+
   // Initialize filters from active elements
   function initializeFilters() {
+    const currentUrl = new URL(window.location.href);
+    sharedActivityName = currentUrl.searchParams.get("activity") || "";
+
     // Initialize day filter
     const activeDayFilter = document.querySelector(".day-filter.active");
     if (activeDayFilter) {
@@ -470,12 +537,15 @@ document.addEventListener("DOMContentLoaded", () => {
     Object.entries(filteredActivities).forEach(([name, details]) => {
       renderActivityCard(name, details);
     });
+
+    highlightSharedActivity();
   }
 
   // Function to render a single activity card
   function renderActivityCard(name, details) {
     const activityCard = document.createElement("div");
     activityCard.className = "activity-card";
+    activityCard.dataset.activityName = name;
 
     // Calculate spots and capacity
     const totalSpots = details.max_participants;
@@ -519,6 +589,12 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
     `;
 
+    const shareUrl = getActivityShareUrl(name);
+    const shareText = getActivityShareText(name, details);
+    const emailShareUrl = `mailto:?subject=${encodeURIComponent(
+      `${name} at Mergington High School`
+    )}&body=${encodeURIComponent(`${shareText}\n\n${shareUrl}`)}`;
+
     activityCard.innerHTML = `
       ${tagHtml}
       <h4>${name}</h4>
@@ -552,6 +628,17 @@ document.addEventListener("DOMContentLoaded", () => {
             .join("")}
         </ul>
       </div>
+      <div class="share-actions" aria-label="Share this activity">
+        <button class="share-button" data-activity="${name}" type="button">
+          Share
+        </button>
+        <button class="share-button secondary-share-button" data-copy-activity="${name}" type="button">
+          Copy Link
+        </button>
+        <a class="share-button secondary-share-button" href="${emailShareUrl}">
+          Email
+        </a>
+      </div>
       <div class="activity-card-actions">
         ${
           currentUser
@@ -570,6 +657,18 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       </div>
     `;
+
+    const shareButton = activityCard.querySelector(".share-button[data-activity]");
+    shareButton.addEventListener("click", () => {
+      shareActivity(name, details);
+    });
+
+    const copyLinkButton = activityCard.querySelector(
+      ".share-button[data-copy-activity]"
+    );
+    copyLinkButton.addEventListener("click", () => {
+      copyActivityLink(name);
+    });
 
     // Add click handlers for delete buttons
     const deleteButtons = activityCard.querySelectorAll(".delete-participant");
