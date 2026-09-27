@@ -58,7 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function getActivityShareUrl(activityName) {
     const shareUrl = new URL(window.location.href);
-    shareUrl.searchParams.set("activityId", getActivityId(activityName));
+    shareUrl.searchParams.set("activityId", activityName);
     return shareUrl.toString();
   }
 
@@ -125,7 +125,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // Initialize filters from active elements
   function initializeFilters() {
     const currentUrl = new URL(window.location.href);
-    sharedActivityId = currentUrl.searchParams.get("activityId") || "";
+    const sharedActivity = currentUrl.searchParams.get("activityId") || "";
+    sharedActivityId = sharedActivity ? getActivityId(sharedActivity) : "";
 
     // Initialize day filter
     const activeDayFilter = document.querySelector(".day-filter.active");

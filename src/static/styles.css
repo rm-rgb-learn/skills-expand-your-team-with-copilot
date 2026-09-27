@@ -218,6 +218,8 @@ section h3 {
 }
 
 .share-button:focus-visible {
+  background-color: var(--primary-light);
+  transform: translateY(-1px);
   outline: 3px solid var(--secondary);
   outline-offset: 2px;
 }
@@ -229,6 +231,11 @@ section h3 {
 }
 
 .secondary-share-button:hover {
+  background-color: var(--border-light);
+  color: var(--text-primary);
+}
+
+.secondary-share-button:focus-visible {
   background-color: var(--border-light);
   color: var(--text-primary);
 }
