@@ -63,7 +63,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function getActivityShareText(activityName, details) {
-    return `Check out ${activityName} at Mergington High School. ${details.description}`;
+    const description = details.description?.trim();
+    return description
+      ? `Check out ${activityName} at Mergington High School. ${description}`
+      : `Check out ${activityName} at Mergington High School.`;
   }
 
   async function copyActivityLink(activityName) {
@@ -103,6 +106,13 @@ document.addEventListener("DOMContentLoaded", () => {
   function highlightSharedActivity() {
     if (!sharedActivityId) {
       return;
+    }
+
+    const currentHighlightedCard = activitiesList.querySelector(
+      ".shared-activity-highlight"
+    );
+    if (currentHighlightedCard) {
+      currentHighlightedCard.classList.remove("shared-activity-highlight");
     }
 
     const activityCard = Array.from(activitiesList.children).find(
