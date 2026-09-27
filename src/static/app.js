@@ -25,6 +25,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const loginForm = document.getElementById("login-form");
   const closeLoginModal = document.querySelector(".close-login-modal");
   const loginMessage = document.getElementById("login-message");
+  const themeToggle = document.getElementById("theme-toggle");
+  const themeToggleLabel = document.getElementById("theme-toggle-label");
 
   // Activity categories with corresponding colors
   const activityTypes = {
@@ -45,6 +47,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Authentication state
   let currentUser = null;
+  let currentTheme = "light";
+  let hasSavedThemePreference = false;
 
   // Time range mappings for the dropdown
   const timeRanges = {
@@ -52,6 +56,74 @@ document.addEventListener("DOMContentLoaded", () => {
     afternoon: { start: "15:00", end: "18:00" }, // After school hours
     weekend: { days: ["Saturday", "Sunday"] }, // Weekend days
   };
+  const supportedThemes = new Set(["light", "dark"]);
+  const prefersDarkModeQuery =
+    window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
+
+  function getStoredTheme() {
+    try {
+      const storedTheme = localStorage.getItem("theme");
+      return supportedThemes.has(storedTheme) ? storedTheme : null;
+    } catch (error) {
+      console.warn("Theme preference could not be read.", error);
+      return null;
+    }
+  }
+
+  function saveTheme(theme) {
+    try {
+      localStorage.setItem("theme", theme);
+    } catch (error) {
+      console.warn("Theme preference could not be saved.", error);
+    }
+  }
+
+  function applyTheme() {
+    const isDarkMode = currentTheme === "dark";
+    if (isDarkMode) {
+      document.documentElement.setAttribute("data-theme", "dark");
+    } else {
+      document.documentElement.removeAttribute("data-theme");
+    }
+  }
+
+  function updateThemeToggle() {
+    if (!themeToggle || !themeToggleLabel) {
+      return;
+    }
+
+    const isDarkMode = currentTheme === "dark";
+    const themeActionLabel = isDarkMode
+      ? "Switch to light mode"
+      : "Switch to dark mode";
+    const themeIcon = themeToggle.querySelector(".theme-icon");
+
+    themeToggle.setAttribute("aria-pressed", String(isDarkMode));
+    themeToggle.setAttribute("aria-label", themeActionLabel);
+    themeToggle.title = themeActionLabel;
+    if (themeIcon) {
+      themeIcon.textContent = isDarkMode ? "☀️" : "🌙";
+    }
+    themeToggleLabel.textContent = isDarkMode ? "Light mode" : "Dark mode";
+  }
+
+  function initializeTheme() {
+    const savedTheme = getStoredTheme();
+    const prefersDarkMode = prefersDarkModeQuery && prefersDarkModeQuery.matches;
+
+    hasSavedThemePreference = Boolean(savedTheme);
+    currentTheme = savedTheme || (prefersDarkMode ? "dark" : "light");
+    applyTheme();
+    updateThemeToggle();
+  }
+
+  function toggleTheme() {
+    currentTheme = currentTheme === "dark" ? "light" : "dark";
+    hasSavedThemePreference = true;
+    saveTheme(currentTheme);
+    applyTheme();
+    updateThemeToggle();
+  }
 
   // Initialize filters from active elements
   function initializeFilters() {
@@ -261,6 +333,18 @@ document.addEventListener("DOMContentLoaded", () => {
   loginButton.addEventListener("click", openLoginModal);
   logoutButton.addEventListener("click", logout);
   closeLoginModal.addEventListener("click", closeLoginModalHandler);
+  if (themeToggle) {
+    themeToggle.addEventListener("click", toggleTheme);
+  }
+  if (prefersDarkModeQuery) {
+    prefersDarkModeQuery.addEventListener("change", (event) => {
+      if (!hasSavedThemePreference) {
+        currentTheme = event.matches ? "dark" : "light";
+        applyTheme();
+        updateThemeToggle();
+      }
+    });
+  }
 
   // Close login modal when clicking outside
   window.addEventListener("click", (event) => {
@@ -907,6 +991,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // Initialize app
+  initializeTheme();
   checkAuthentication();
   initializeFilters();
   fetchActivities();
