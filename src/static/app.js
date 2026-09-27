@@ -86,16 +86,22 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function updateThemeToggle() {
+    if (!themeToggle || !themeToggleLabel) {
+      return;
+    }
+
     const isDarkMode = currentTheme === "dark";
     const themeActionLabel = isDarkMode
       ? "Switch to light mode"
       : "Switch to dark mode";
+    const themeIcon = themeToggle.querySelector(".theme-icon");
+
     themeToggle.setAttribute("aria-pressed", String(isDarkMode));
     themeToggle.setAttribute("aria-label", themeActionLabel);
     themeToggle.title = themeActionLabel;
-    themeToggle.querySelector(".theme-icon").textContent = isDarkMode
-      ? "☀️"
-      : "🌙";
+    if (themeIcon) {
+      themeIcon.textContent = isDarkMode ? "☀️" : "🌙";
+    }
     themeToggleLabel.textContent = isDarkMode ? "Light mode" : "Dark mode";
   }
 
@@ -304,7 +310,9 @@ document.addEventListener("DOMContentLoaded", () => {
   loginButton.addEventListener("click", openLoginModal);
   logoutButton.addEventListener("click", logout);
   closeLoginModal.addEventListener("click", closeLoginModalHandler);
-  themeToggle.addEventListener("click", toggleTheme);
+  if (themeToggle) {
+    themeToggle.addEventListener("click", toggleTheme);
+  }
   if (prefersDarkModeQuery) {
     prefersDarkModeQuery.addEventListener("change", (event) => {
       if (!hasSavedThemePreference) {
