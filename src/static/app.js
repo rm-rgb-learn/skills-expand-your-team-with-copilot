@@ -53,15 +53,31 @@ document.addEventListener("DOMContentLoaded", () => {
     afternoon: { start: "15:00", end: "18:00" }, // After school hours
     weekend: { days: ["Saturday", "Sunday"] }, // Weekend days
   };
+  const supportedThemes = new Set(["light", "dark"]);
+
+  function getStoredTheme() {
+    try {
+      const storedTheme = localStorage.getItem("theme");
+      return supportedThemes.has(storedTheme) ? storedTheme : null;
+    } catch (error) {
+      console.warn("Theme preference could not be read.", error);
+      return null;
+    }
+  }
+
+  function saveTheme(theme) {
+    try {
+      localStorage.setItem("theme", theme);
+    } catch (error) {
+      console.warn("Theme preference could not be saved.", error);
+    }
+  }
 
   function updateThemeToggle() {
     const isDarkMode = currentTheme === "dark";
     document.documentElement.setAttribute("data-theme", currentTheme);
     themeToggle.setAttribute("aria-pressed", String(isDarkMode));
-    themeToggle.setAttribute(
-      "aria-label",
-      isDarkMode ? "Switch to light mode" : "Switch to dark mode"
-    );
+    themeToggle.title = isDarkMode ? "Switch to light mode" : "Switch to dark mode";
     themeToggle.querySelector(".theme-icon").textContent = isDarkMode
       ? "☀️"
       : "🌙";
@@ -69,7 +85,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function initializeTheme() {
-    const savedTheme = localStorage.getItem("theme");
+    const savedTheme = getStoredTheme();
     const prefersDarkMode =
       window.matchMedia &&
       window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -80,7 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function toggleTheme() {
     currentTheme = currentTheme === "dark" ? "light" : "dark";
-    localStorage.setItem("theme", currentTheme);
+    saveTheme(currentTheme);
     updateThemeToggle();
   }
 
